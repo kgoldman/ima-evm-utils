@@ -2589,7 +2589,7 @@ static int ima_measurement(const char *file)
 	struct template_entry entry = { .template = NULL };
 	size_t entry_digest_len = SHA_DIGEST_LENGTH;
 	const EVP_MD *md;
-	FILE *fp;
+	FILE *fp = NULL;
 	int invalid_template_digest = 0;
 	int err_padded = -1;
 	int err = -1;
@@ -2602,21 +2602,21 @@ static int ima_measurement(const char *file)
 
 	pseudo_banks = init_tpm_banks(&num_banks);
 	if (!pseudo_banks)
-		goto out_free;
+		goto out;
 
 	tpm_banks = init_tpm_banks(&num_banks);
 	if (!tpm_banks)
-		goto out_free;
+		goto out;
 
 	fp = fopen(file, "rb");
 	if (!fp) {
 		log_err("Failed to open measurement file: %s\n", file);
-		goto out_free;
+		goto out;
 	}
 
 	md = get_digestbylogfile(file);
 	if (!md)
-		goto out_free;
+		goto out;
 	entry_digest_len = EVP_MD_size(md);
 
 	if (imaevm_params.keyfile)	/* Support multiple public keys */
@@ -2834,8 +2834,8 @@ static int ima_measurement(const char *file)
 	}
 
 out:
-	fclose(fp);
-out_free:
+	if (fp)
+		fclose(fp);
 	free(tpm_banks);
 	free(pseudo_banks);
 	free(pseudo_padded_banks);
